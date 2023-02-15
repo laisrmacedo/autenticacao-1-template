@@ -3,21 +3,30 @@ import { CreateProductInput, CreateProductOutput, GetProductsInput, GetProductsO
 import { BadRequestError } from "../errors/BadRequestError"
 import { Product } from "../models/Product"
 import { IdGenerator } from "../services/IdGenerator"
+import { TokenManager } from "../services/TokenManager"
 
 export class ProductBusiness {
     constructor(
         private productDatabase: ProductDatabase,
         private idGenerator: IdGenerator,
-
+        private tokenManager: TokenManager
     ) {}
 
     public getProducts = async (
         input: GetProductsInput
     ): Promise<GetProductsOutput> => {
-        const { q } = input
+        const { q, token } = input
 
         if (typeof q !== "string" && q !== undefined) {
             throw new BadRequestError("'q' deve ser string ou undefined")
+        }
+        if (typeof token !== "string") {
+            throw new BadRequestError("'token' deve ser string ou undefined")
+        }
+
+        const payload = await this.tokenManager.getPayload(token)
+        if(payload === null){
+            throw new BadRequestError("'token' invalido")
         }
 
         const productsDB = await this.productDatabase.findProducts(q)
